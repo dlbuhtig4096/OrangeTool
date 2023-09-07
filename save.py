@@ -2,14 +2,13 @@
 import sys, os, struct, json, base64
 
 gPage = "utf8"
-gMeta = "00000000000000000000000000000000"
 
-def decode(rt):
+def decode(rt, meta = "00000000000000000000000000000000"):
     dst = rt + "save/"
     os.makedirs(dst, exist_ok = True)
     meta = json.loads(
         base64.b64decode(
-            open(rt + gMeta, "rb").read()
+            open(rt + meta, "rb").read()
         )[4:].decode("utf-16-le")
     )
     open(dst + "meta.json", "wb").write(
@@ -33,13 +32,13 @@ def decode(rt):
             )
             p0 += sz
 
-def encode(rt):
+def encode(rt, meta = "00000000000000000000000000000000"):
     dst = rt + "save/"
     meta = json.loads(
         open(dst + "meta.json", "rb").read().decode(gPage)
     )
     raw = json.dumps(meta, indent = 4, sort_keys = False).encode("utf-16-le")
-    open(rt + gMeta, "wb").write(
+    open(rt + meta, "wb").write(
         base64.b64encode(struct.pack("<I", len(raw)) + raw)
     )
     for k in meta.keys():
@@ -65,11 +64,10 @@ if __name__ == "__main__":
     if argc > 2:
         rt = "" if argc < 4 else argv[3]
         print(argv)
-        gMeta = argv[2]
         {
              "d": decode,
              "e": encode
-        }[argv[1]](rt)
+        }[argv[1]](rt, argv[2])
     
             
             
