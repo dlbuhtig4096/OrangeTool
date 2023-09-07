@@ -1,5 +1,5 @@
 
-import os, struct, json, base64
+import sys, os, struct, json, base64
 
 gPage = "utf8"
 gMeta = "00000000000000000000000000000000"
@@ -57,5 +57,19 @@ def encode(rt):
             raw = f.read()
             f.seek(0)
             fwrite(base64.b64encode(raw))
+   
+
+if __name__ == "__main__":
+    argv = sys.argv
+    argc = len(argv)
+    if argc > 2:
+        rt = "" if argc < 4 else argv[3]
+        print(argv)
+        gMeta = argv[2]
+        {
+             "d": decode,
+             "e": encode
+        }[argv[1]](rt)
+    
             
             
