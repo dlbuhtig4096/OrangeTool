@@ -1,0 +1,61 @@
+
+import os, struct, json, base64
+
+gPage = "utf8"
+gMeta = "00000000000000000000000000000000"
+
+def decode(rt):
+    dst = rt + "save/"
+    os.makedirs(dst, exist_ok = True)
+    meta = json.loads(
+        base64.b64decode(
+            open(rt + gMeta, "rb").read()
+        )[4:].decode("utf-16-le")
+    )
+    open(dst + "meta.json", "wb").write(
+        json.dumps(meta, indent = 4, sort_keys = False).encode(gPage)
+    )
+    for k in meta.keys():
+        out = dst + k + "/"
+        os.makedirs(out, exist_ok = True)
+        raw = base64.b64decode(open(rt + k, "rb").read())
+        p0 = 4
+        p1 = len(raw)
+        while p0 < p1:
+            sz, = struct.unpack("<I", raw[p0 : p0 + 4])
+            p0 += 4
+            nm = raw[p0 : p0 + sz].decode("utf-16-le")
+            p0 += sz
+            sz, = struct.unpack("<I", raw[p0 : p0 + 4])
+            p0 += 4
+            open(out + nm + ".json", "wb").write(
+                raw[p0 : p0 + sz].decode("utf-16-le").encode(gPage)
+            )
+            p0 += sz
+
+def encode(rt):
+    dst = rt + "save/"
+    meta = json.loads(
+        open(dst + "meta.json", "rb").read().decode(gPage)
+    )
+    raw = json.dumps(meta, indent = 4, sort_keys = False).encode("utf-16-le")
+    open(rt + gMeta, "wb").write(
+        base64.b64encode(struct.pack("<I", len(raw)) + raw)
+    )
+    for k in meta.keys():
+        out = dst + k + "/"
+        with open(k, "wb+") as f:
+            fwrite = f.write
+            fs = next(os.walk(out))[-1]
+            fwrite(struct.pack("<I", len(fs)))
+            for fn in fs:
+                nm = fn[: -5].encode("utf-16-le")
+                fwrite(struct.pack("<I", len(nm)) + nm)
+                raw = open(out + fn, "rb").read().decode(gPage).encode("utf-16-le")
+                fwrite(struct.pack("<I", len(raw)) + raw)
+            f.seek(0)
+            raw = f.read()
+            f.seek(0)
+            fwrite(base64.b64encode(raw))
+            
+            
