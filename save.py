@@ -4,6 +4,7 @@ import sys, os, struct, json, base64
 gPage = "utf8"
 
 def decode(rt, meta = "00000000000000000000000000000000"):
+    if rt and not rt.endswith("/") and not rt.endswith("\\") : rt += "/"
     dst = rt + "save/"
     os.makedirs(dst, exist_ok = True)
     meta = json.loads(
@@ -33,6 +34,7 @@ def decode(rt, meta = "00000000000000000000000000000000"):
             p0 += sz
 
 def encode(rt, meta = "00000000000000000000000000000000"):
+    if rt and not rt.endswith("/") and not rt.endswith("\\") : rt += "/"
     dst = rt + "save/"
     meta = json.loads(
         open(dst + "meta.json", "rb").read().decode(gPage)
@@ -62,7 +64,9 @@ if __name__ == "__main__":
     argv = sys.argv
     argc = len(argv)
     if argc > 2:
-        rt = "" if argc < 4 else argv[3]
+        rt = ""
+        if argc > 3:
+            rt = argv[3]
         print(argv)
         {
              "d": decode,
