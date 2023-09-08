@@ -1,5 +1,5 @@
 
-import os, sys, json, struct, base64
+import os, sys, json, base64
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
 import lz4.block
@@ -64,7 +64,7 @@ gLdr4 = {
     "z": "EventEx"
 }
 
-def _req(dst, src):
+def _req(src):
     return json.loads(
         unpad(
             AES.new(gAesKey, AES.MODE_CBC, gAesIv).decrypt(
@@ -89,11 +89,11 @@ def decode(dst, src):
     if src and not src.endswith("/") and not src.endswith("\\") : src += "/"
     if dst and not dst.endswith("/") and not dst.endswith("\\") : dst += "/"
     os.makedirs(dst, exist_ok = True)
-    _req(dst + "PlayerInfo.json", src + "RetrievePlayerInfoReq")
-    C1 = _req(dst + "Collector1.json", src + "LoginRetrieveCollector1Req")
-    C2 = _req(dst + "Collector2.json", src + "LoginRetrieveCollector2Req")
-    C3 = _req(dst + "Collector3.json", src + "LoginRetrieveCollector3Req")
-    C4 = _req(dst + "Collector4.json", src + "LoginRetrieveCollector4Req")
+    _req(src + "RetrievePlayerInfoReq")
+    C1 = _req(src + "LoginRetrieveCollector1Req")
+    C2 = _req(src + "LoginRetrieveCollector2Req")
+    C3 = _req(src + "LoginRetrieveCollector3Req")
+    C4 = _req(src + "LoginRetrieveCollector4Req")
     for k, v in gLdr1.items(): open(dst + v + ".json", "wb").write(json.dumps(C1[k], indent = 4, sort_keys = False).encode("utf8"))
     for k, v in gLdr2.items(): open(dst + v + ".json", "wb").write(json.dumps(C2[k], indent = 4, sort_keys = False).encode("utf8"))
     for k, v in gLdr3.items(): open(dst + v + ".json", "wb").write(json.dumps(C3[k], indent = 4, sort_keys = False).encode("utf8"))
