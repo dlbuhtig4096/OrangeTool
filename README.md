@@ -1,13 +1,14 @@
 
 # Introduction #
-This is a python library for save data decoding and encoding.
+This is a python library for the **OrangeClient**.
 
 # Dependency #
 Python3. That's it.
 
-# Document #
+# Modules #
 
 ## save.py ##
+This module encodes the offline save.
 
  - `metaDecode`: Decode metadata to memory.
     - Argments:
@@ -52,9 +53,13 @@ Python3. That's it.
         - `void`: None.
 
 ## payload.py ##
+This module decodes payload from the online packets.
+
  - `procDecode`: Decode the response body from the server.
     - Argments:
         - `str dst`: Destination folder.
         - `str src`: Source folder.
     - Return value:
         - `void`: None.
+
+
