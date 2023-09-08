@@ -3,7 +3,11 @@
 This is a python library for the **OrangeClient**.
 
 # Dependency #
-Python3. That's it.
+ - save.py:
+    - none
+ - paylaod.py:
+    - pycryptodome
+    - lz4
 
 # Modules #
 
