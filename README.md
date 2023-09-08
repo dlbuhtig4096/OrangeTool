@@ -1,11 +1,11 @@
 
 # Introduction #
-This is a python library for the **OrangeClient**.
+This is a python library for game archives from the **OrangeClient**.
 
 # Modules #
 
 ## save.py ##
-This module encodes the offline save.
+This module encodes save files from offline game.
 
  - `metaDecode`: Decode metadata to memory.
     - Argments:
@@ -50,7 +50,7 @@ This module encodes the offline save.
         - `void`: None.
 
 ## payload.py ##
-This module decodes payload from the online packets.
+This module decodes raw payloads from the server responses.
 
  - `procDecode`: Decode the response body from the server.
     - Argments:
