@@ -89,11 +89,11 @@ def procDecode(dst, src):
     if src and not src.endswith("/") and not src.endswith("\\") : src += "/"
     if dst and not dst.endswith("/") and not dst.endswith("\\") : dst += "/"
     os.makedirs(dst, exist_ok = True)
-    _req(src + "RetrievePlayerInfoReq")
     C1 = _req(src + "LoginRetrieveCollector1Req")
     C2 = _req(src + "LoginRetrieveCollector2Req")
     C3 = _req(src + "LoginRetrieveCollector3Req")
     C4 = _req(src + "LoginRetrieveCollector4Req")
+    open("Player.json", "wb").write(json.dumps(_req(src + "RetrievePlayerInfoReq"), indent = 4, sort_keys = False).encode("utf8"))
     for k, v in gLdr1.items(): open(dst + v + ".json", "wb").write(json.dumps(C1[k], indent = 4, sort_keys = False).encode("utf8"))
     for k, v in gLdr2.items(): open(dst + v + ".json", "wb").write(json.dumps(C2[k], indent = 4, sort_keys = False).encode("utf8"))
     for k, v in gLdr3.items(): open(dst + v + ".json", "wb").write(json.dumps(C3[k], indent = 4, sort_keys = False).encode("utf8"))
