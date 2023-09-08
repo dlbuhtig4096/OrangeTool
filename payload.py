@@ -85,7 +85,7 @@ def _ext(src):
     # Todo: parse the bson
     return raw
     
-def decode(dst, src):
+def procDecode(dst, src):
     if src and not src.endswith("/") and not src.endswith("\\") : src += "/"
     if dst and not dst.endswith("/") and not dst.endswith("\\") : dst += "/"
     os.makedirs(dst, exist_ok = True)
@@ -102,4 +102,4 @@ def decode(dst, src):
 
 if __name__ == "__main__":
     argv = sys.argv
-    if len(argv) == 3: decode(*argv[1 :])
+    if len(argv) == 3: procDecode(*argv[1 :])

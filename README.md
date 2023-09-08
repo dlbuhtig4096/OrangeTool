@@ -2,13 +2,6 @@
 # Introduction #
 This is a python library for the **OrangeClient**.
 
-# Dependency #
- - save.py:
-    - none
- - paylaod.py:
-    - pycryptodome
-    - lz4
-
 # Modules #
 
 ## save.py ##
