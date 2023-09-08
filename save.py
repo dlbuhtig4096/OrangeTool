@@ -36,14 +36,14 @@ def decode(rt, meta = "00000000000000000000000000000000"):
 def encode(rt, meta = "00000000000000000000000000000000"):
     if rt and not rt.endswith("/") and not rt.endswith("\\") : rt += "/"
     dst = rt + "save/"
-    meta = json.loads(
+    m = json.loads(
         open(dst + "meta.json", "rb").read().decode(gPage)
     )
-    raw = json.dumps(meta, indent = 4, sort_keys = False).encode("utf-16-le")
+    raw = json.dumps(m, indent = 4, sort_keys = False).encode("utf-16-le")
     open(rt + meta, "wb").write(
         base64.b64encode(struct.pack("<I", len(raw)) + raw)
     )
-    for k in meta.keys():
+    for k in m.keys():
         out = dst + k + "/"
         with open(k, "wb+") as f:
             fwrite = f.write
