@@ -1,56 +1,28 @@
 
 # Introduction #
-This is a python library for game archives from the **OrangeClient**.
+This is a python library for processing game archives from the **OrangeClient**.
 
 # Modules #
 
-## save.py ##
-This module encodes save files from offline game.
+## abc.py ##
+This module processes streaming assets.
 
- - `metaDecode`: Decode metadata to memory.
+ - `procDecode`: Decode the download data under the stream assets.
     - Argments:
-        - `dict data`: Output data.
-        - `io.IOBase hwd`: Input file handle.
-    - Return value:
-        - `dict`: The decoded file metadata from the file handle.
-
- - `metaEncode`: Encode metadata from memory.
-    - Argments:
-        - `dict data`: Input data.
-        - `io.IOBase hwd`: Output file handle.
-    - Return value:
-        - `bytes`: Encoded data.
-    
- - `slotDecode`: Decode save slot to memory.
-    - Argments:
-        - `dict data`: Output data.
-        - `io.IOBase hwd`: Input file handle.
-    - Return value:
-        - `dict`: The decoded file metadata from the file handle.
-
- - `slotEncode`: Encode save slot from memory.
-    - Argments:
-        - `dict data`: Input data.
-        - `io.IOBase hwd`: Output file handle.
-    - Return value:
-        - `bytes`: Encoded data.
-
- - `procDecode`: Decode save directory on the file system.
-    - Argments:
-        - `str rt`: Path to the save folder.
-        - `str meta`: Name to the metadata, usually the smallest file under the save folder.
+        - `str dst`: Work directory.
+        - `str src`: The StreamingAssets folder.
     - Return value:
         - `void`: None.
 
- - `procEncode`: Encode save directory on the file system.
+ - `procDecode`: Encode the download data under the stream assets.
     - Argments:
-        - `str rt`: Path to the save folder.
-        - `str meta`: Name to the metadata, usually the smallest file under the save folder.
+        - `str dst`: Work directory.
+        - `str src`: The StreamingAssets folder.
     - Return value:
         - `void`: None.
 
-## payload.py ##
-This module decodes raw payloads from the server responses.
+## net.py ##
+This module processes raw payloads from the server responses.
 
  - `procDecode`: Decode the response body from the server.
     - Argments:
@@ -59,4 +31,47 @@ This module decodes raw payloads from the server responses.
     - Return value:
         - `void`: None.
 
+## save.py ##
+This module processes save files from offline game.
 
+ - `bfDecode`: Decode the brief file to memory.
+    - Argments:
+        - `dict data`: Output data.
+        - `io.IOBase hwd`: Input file handle.
+    - Return value:
+        - `dict`: The decoded file metadata from the file handle.
+
+ - `bfEncode`: Encode the brief file from memory.
+    - Argments:
+        - `dict data`: Input data.
+        - `io.IOBase hwd`: Output file handle.
+    - Return value:
+        - `bytes`: Encoded data.
+    
+ - `sdDecode`: Decode save data to memory.
+    - Argments:
+        - `dict data`: Output data.
+        - `io.IOBase hwd`: Input file handle.
+    - Return value:
+        - `dict`: The decoded file metadata from the file handle.
+
+ - `sdEncode`: Encode save data from memory.
+    - Argments:
+        - `dict data`: Input data.
+        - `io.IOBase hwd`: Output file handle.
+    - Return value:
+        - `bytes`: Encoded data.
+
+ - `procDecode`: Decode save directory on the file system.
+    - Argments:
+        - `str brief`: Name of the brief file, usually the smallest file under the save folder.
+        - `str rt`: Path to the save folder.
+    - Return value:
+        - `void`: None.
+
+ - `procEncode`: Encode save directory on the file system.
+    - Argments:
+        - `str brief`: Name of the brief file, usually the smallest file under the save folder.
+        - `str rt`: Path to the save folder.
+    - Return value:
+        - `void`: None.

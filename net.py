@@ -74,12 +74,12 @@ def _req(src):
     )
 
 def _ext(src):
-    def _xorpad():
+    def _iter():
         s = gAesKey + gAesIv
         while True:
             for c in s: yield c
     raw = unpad(AES.new(gAesKey, AES.MODE_CBC, gAesIv).decrypt(base64.b64decode(src)), AES.block_size)
-    raw = bytes([c ^ k for c, k in zip(raw, _xorpad())])
+    raw = bytes([c ^ k for c, k in zip(raw, _iter())])
     raw = lz4.block.decompress(raw)
     
     # Todo: parse the bson
