@@ -36,8 +36,6 @@ gOrangeDecoder = {
     "RelayParam": netDecode,
     "GameData.bin": binDecode,
     "TextData.bin": binDecode,
-    "BGM00.acb": _id,
-    "BGM00.awb": _id,
     "ORANGE_SOUND.acf": _id
 }
 gOrangeEncoder = {
@@ -46,8 +44,6 @@ gOrangeEncoder = {
     "RelayParam": netEncode,
     "GameData.bin": binEncode,
     "TextData.bin": binEncode,
-    "BGM00.acb": _id,
-    "BGM00.awb": _id,
     "ORANGE_SOUND.acf": _id
 }
 
@@ -59,6 +55,7 @@ def procEncode(dst, src):
     for fn in gOrangeEncoder:
         data[fn] = open(dst + fn, "rb").read()
     abc = json.loads(data["abconfig"])
+    afi = json.loads(data["audiofileinfo"])
     for d in abc["ListAssetbundleId"]:
         fn = d["name"]
         raw = open(dst + fn, "rb").read()
@@ -70,6 +67,14 @@ def procEncode(dst, src):
                 [min(1 << int(i), 0x80) for i in str(crc)]
             )
         )
+    rt = dst + "audio/" 
+    for d in afi:
+        fn = d["name"]
+        if not fn.endswith(".awb"): fn += ".acb"
+        open(src + hashlib.md5(fn.encode("utf8")).hexdigest(), "wb").write(
+            open(rt + fn, "rb").read()
+        )
+        
     data["abconfig"] = json.dumps(abc, sort_keys = False).encode("utf8")
     for fn, raw in data.items():
         open(dst + fn, "wb").write(raw)
@@ -94,6 +99,14 @@ def procDecode(dst, src):
                 open(src + d["hash"], "rb").read(),
                 [min(1 << int(i), 0x80) for i in str(d["crc"])]
             )
+        )
+    rt = dst + "audio/" 
+    os.makedirs(dst + rt, exist_ok = True)
+    for d in json.loads(data["audiofileinfo"]):
+        fn = d["name"]
+        if not fn.endswith(".awb"): fn += ".acb"
+        open(rt + fn, "wb").write(
+            open(src + hashlib.md5(fn.encode("utf8")).hexdigest(), "rb").read()
         )
 
 if __name__ == "__main__":

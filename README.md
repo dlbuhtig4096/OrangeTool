@@ -14,7 +14,7 @@ This module processes streaming assets.
     - Return value:
         - `void`: None.
 
- - `procDecode`: Encode the download data under the stream assets.
+ - `procEncode`: Encode the download data under the stream assets.
     - Argments:
         - `str dst`: Work directory.
         - `str src`: The StreamingAssets folder.
