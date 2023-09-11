@@ -69,7 +69,7 @@ def procEncode(dst, src):
         )
     rt = dst + "audio/" 
     for d in afi:
-        fn = d["name"]
+        fn = d["Name"]
         if not fn.endswith(".awb"): fn += ".acb"
         open(src + hashlib.md5(fn.encode("utf8")).hexdigest(), "wb").write(
             open(rt + fn, "rb").read()
@@ -101,9 +101,9 @@ def procDecode(dst, src):
             )
         )
     rt = dst + "audio/" 
-    os.makedirs(dst + rt, exist_ok = True)
+    os.makedirs(rt, exist_ok = True)
     for d in json.loads(data["audiofileinfo"]):
-        fn = d["name"]
+        fn = d["Name"]
         if not fn.endswith(".awb"): fn += ".acb"
         open(rt + fn, "wb").write(
             open(src + hashlib.md5(fn.encode("utf8")).hexdigest(), "rb").read()
