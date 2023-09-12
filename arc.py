@@ -329,7 +329,7 @@ def procRepack(dst, src):
 if __name__ == "__main__":
     argv = sys.argv
     argc = len(argv)
-    if argc == 3:
+    if argc == 4:
         {
              "d": procUnpack,
              "e": procRepack
