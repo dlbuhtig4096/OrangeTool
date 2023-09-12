@@ -1,5 +1,6 @@
 
 import io, os, sys, struct, json, hashlib, base64, zlib
+import yaml
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 import lz4.block
@@ -205,10 +206,14 @@ class CddLdr(ExtLdr):
     
     def __init__(self, name):
         super(CddLdr, self).__init__(name)
-        self.mPath = name[: name.rfind(".") + 1][: -1] + "/.json"
+        self.mPath = name[: name.rfind(".") + 1][: -1] + "/.yaml"
     
-    load = staticmethod(JsonLdr.load)
-    dump = staticmethod(JsonLdr.dump)
+    load = staticmethod(
+        lambda dt: yaml.load(dt.decode("utf8"), Loader = yaml.CLoader)
+    )
+    dump = staticmethod(
+        lambda dt: yaml.dump(dt, Dumper = yaml.CDumper, indent = 4, sort_keys = False).encode("utf8")
+    )
     
     @staticmethod
     def decode(dt):
@@ -291,7 +296,7 @@ class CddLdr(ExtLdr):
         d = dt.pop("", {})
         for k, df in dt.items():
             if not isinstance(k, str): continue
-            open(rt + k + ".json", "wb").write(self.dump(df))
+            open(rt + k + ".yaml", "wb").write(self.dump(df))
         return d
     
     # Repack data diagram
@@ -301,7 +306,7 @@ class CddLdr(ExtLdr):
         dt = {"": dt}
         for k in dv.get("", []):
             if not isinstance(k, str): continue
-            dt[k] = self.load(open(rt + k + ".json", "rb").read())
+            dt[k] = self.load(open(rt + k + ".yaml", "rb").read())
         return dt
     
 
