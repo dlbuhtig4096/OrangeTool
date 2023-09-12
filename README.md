@@ -4,17 +4,17 @@ This is a python library for processing game archives from the **OrangeClient**.
 
 # Modules #
 
-## abc.py ##
+## arc.py ##
 This module processes streaming assets.
 
- - `procDecode`: Decode the download data under the stream assets.
+ - `procUnpack`: Unpack the download data under the stream assets.
     - Argments:
         - `str dst`: Work directory.
         - `str src`: The StreamingAssets folder.
     - Return value:
         - `void`: None.
 
- - `procEncode`: Encode the download data under the stream assets.
+ - `procRepack`: Repack the download data under the stream assets.
     - Argments:
         - `str dst`: Work directory.
         - `str src`: The StreamingAssets folder.
