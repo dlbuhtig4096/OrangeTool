@@ -20,7 +20,7 @@ _cdd_i32 = lambda cb: struct.unpack("<i", cb(4))[0]
 _cdd_i64 = lambda cb: struct.unpack("<q", cb(8))[0]
 _cdd_f64 = lambda cb: struct.unpack("<d", cb(8))[0]
 _cdd_a8 = lambda cb: cb(struct.unpack("<I", cb(4))[0]).decode("utf-16-le")
-_cdd_a16 = lambda cb: cb(struct.unpack("<I", cb(4))[0]).decode("utf-16-le")
+_cdd_a16 = _cdd_a8
 _cdd_u8 = lambda cb: cb(1)[0]
 _cdd_u32 = lambda cb: struct.unpack("<I", cb(4))[0]
 _cdd_jpt = [_cdd_i32, _cdd_i64, _cdd_f64, _cdd_a8, _cdd_a16, _cdd_u8, _cdd_u32]
@@ -28,8 +28,11 @@ _cdd_lbl = ["i32", "i64", "f64", "a8", "a16", "u8", "u32"]
 _cde_i32 = lambda cb, v: cb(struct.pack("<i", v))
 _cde_i64 = lambda cb, v: cb(struct.pack("<q", v))
 _cde_f64 = lambda cb, v: cb(struct.pack("<d", v))
-_cde_a8 = lambda cb, v: cb(struct.pack("<I", len(v)) + v.encode("utf-16-le"))
-_cde_a16 = lambda cb, v: cb(struct.pack("<I", len(v)) + v.encode("utf-16-le"))
+def _cde_a8(cb, v):
+    s = v.encode("utf-16-le")
+    cb(struct.pack("<I", len(s)))
+    cb(s)
+_cde_a16 = _cde_a8
 _cde_u8 = lambda cb, v: cb(chr(v))
 _cde_u32 = lambda cb, v: cb(struct.pack("<I", v))
 _cde_jpt = [_cde_i32, _cde_i64, _cde_f64, _cde_a8, _cde_a16, _cde_u8, _cde_u32]
@@ -249,11 +252,12 @@ class CddLdr(ExtLdr):
     @staticmethod
     def encode(dt):
         dv = dt.get("", {})
+        ls = dv.get("", [])
         with io.BytesIO() as f:
             fwrite = f.write
             
-            fwrite(struct.pack("<I", len(dt) - 1))
-            for i in dv.get("", []):
+            fwrite(struct.pack("<I", len(ls)))
+            for i in ls:
                 if not isinstance(i, str):
                     _cde_u32(fwrite, i)
                     continue
