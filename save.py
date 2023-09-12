@@ -2,8 +2,22 @@
 import sys, os, struct, json, base64
 
 gPage = "utf8"
+gLdr = {
+    
+    "Stage": (
+        ("$ka", "StageID"),
+        ("$kb", "Star"),
+        ("$kc", "ClearCount"),
+        ("$kd", "IsNew"),
+        ("$ke", "Score"),
+        ("$kf", "ExtraResetCount"),
+        ("$kg", "LastCharacterID"),
+        ("$kh", "LastMainWeaponID"),
+        ("$ki", "LastSubWeaponID")
+    )
+}
 
-def metaDecode(data, hwd):
+def bfDecode(data, hwd):
     data.update(
         json.loads(
             base64.b64decode(
@@ -13,13 +27,13 @@ def metaDecode(data, hwd):
     )
     return data
 
-def metaEncode(data, hwd):
+def bfEncode(data, hwd):
     raw = json.dumps(data, indent = 4, sort_keys = False).encode("utf-16-le")
     raw = base64.b64encode(struct.pack("<I", len(raw)) + raw)
     hwd.write(raw)
     return raw
 
-def slotDecode(data, hwd):
+def sdDecode(data, hwd):
     raw = base64.b64decode(hwd.read())
     p0 = 4
     p1 = len(raw)
@@ -34,7 +48,7 @@ def slotDecode(data, hwd):
         p0 += sz
     return data
 
-def slotEncode(data, hwd):
+def sdEncode(data, hwd):
     fwrite = hwd.write
     fwrite(struct.pack("<I", len(data)))
     for nm, dt in data.items():
@@ -49,44 +63,40 @@ def slotEncode(data, hwd):
     fwrite(raw)
     return raw
 
-def procDecode(rt, meta = "00000000000000000000000000000000"):
+def procDecode(brief = "BRIEF", rt = ""):
     if rt and not rt.endswith("/") and not rt.endswith("\\") : rt += "/"
     dst = rt + "save/"
     os.makedirs(dst, exist_ok = True)
-    m = metaDecode({}, open(rt + meta, "rb"))
-    open(dst + "meta.json", "wb").write(
+    m = bfDecode({}, open(rt + brief, "rb"))
+    open(dst + "brief.json", "wb").write(
         json.dumps(m, indent = 4, sort_keys = False).encode(gPage)
     )
     for k in m.keys():
         out = dst + k + "/"
         os.makedirs(out, exist_ok = True)
-        for nm, dt in slotDecode({}, open(rt + k, "rb")).items():
+        for nm, dt in sdDecode({}, open(rt + k, "rb")).items():
             open(out + nm + ".json", "wb").write(dt.encode(gPage))
 
-def procEncode(rt, meta = "00000000000000000000000000000000"):
+def procEncode(brief = "BRIEF", rt = ""):
     if rt and not rt.endswith("/") and not rt.endswith("\\") : rt += "/"
     dst = rt + "save/"
     m = json.loads(
-        open(dst + "meta.json", "rb").read().decode(gPage)
+        open(dst + "brief.json", "rb").read().decode(gPage)
     )
-    metaEncode(m, open(rt + meta, "wb"))
+    bfEncode(m, open(rt + brief, "wb"))
     for k in m:
         out = dst + k + "/"
         data = {}
         for fn in next(os.walk(out))[-1]:
             data[fn[: -5]] = open(out + fn, "rb").read().decode(gPage)
-        slotEncode(data, open(rt + k, "wb+"))
+        sdEncode(data, open(rt + k, "wb+"))
 
 if __name__ == "__main__":
     argv = sys.argv
     argc = len(argv)
-    if argc > 2:
-        rt = ""
-        if argc > 3:
-            rt = argv[3]
-        print(argv)
+    if argc > 1 and argc < 4:
         {
              "d": procDecode,
              "e": procEncode
-        }[argv[1]](rt, argv[2])
+        }[argv[1]](*argv[2:])
             
