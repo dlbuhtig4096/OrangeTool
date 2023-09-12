@@ -24,8 +24,8 @@ _cdd_a8 = lambda cb: cb(struct.unpack("<I", cb(4))[0]).decode("utf-16-le")
 _cdd_a16 = _cdd_a8
 _cdd_u8 = lambda cb: cb(1)[0]
 _cdd_u32 = lambda cb: struct.unpack("<I", cb(4))[0]
-_cdd_jpt = [_cdd_i32, _cdd_i64, _cdd_f64, _cdd_a8, _cdd_a16, _cdd_u8, _cdd_u32]
-_cdd_lbl = ["i32", "i64", "f64", "a8", "a16", "u8", "u32"]
+_cdd_jpt = [_cdd_i32, _cdd_i64, _cdd_f64, _cdd_a8, _cdd_a16, _cdd_u8, _cdd_a16]
+_cdd_lbl = ["i32", "i64", "f64", "a8", "a16", "u8", "cmt"]
 _cde_i32 = lambda cb, v: cb(struct.pack("<i", v))
 _cde_i64 = lambda cb, v: cb(struct.pack("<q", v))
 _cde_f64 = lambda cb, v: cb(struct.pack("<d", v))
@@ -36,7 +36,7 @@ def _cde_a8(cb, v):
 _cde_a16 = _cde_a8
 _cde_u8 = lambda cb, v: cb(chr(v))
 _cde_u32 = lambda cb, v: cb(struct.pack("<I", v))
-_cde_jpt = [_cde_i32, _cde_i64, _cde_f64, _cde_a8, _cde_a16, _cde_u8, _cde_u32]
+_cde_jpt = [_cde_i32, _cde_i64, _cde_f64, _cde_a8, _cde_a16, _cde_u8, _cde_a16]
 _cde_lbl = {v: k for k, v in enumerate(_cdd_lbl)}
 
 class NullLdr:
