@@ -212,7 +212,7 @@ class CddLdr(ExtLdr):
         lambda dt: yaml.load(dt.decode("utf8"), Loader = yaml.CLoader)
     )
     dump = staticmethod(
-        lambda dt: yaml.dump(dt, Dumper = yaml.CDumper, indent = 4, sort_keys = False).encode("utf8")
+        lambda dt: yaml.dump(dt, Dumper = yaml.CDumper, indent = 4, allow_unicode = True, sort_keys = False).encode("utf8")
     )
     
     @staticmethod
