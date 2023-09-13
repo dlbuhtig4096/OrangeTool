@@ -129,7 +129,7 @@ class AbcLdr(JsonLdr):
     # Unpack asset bundle
     def unpackImpl(self, dst, src, dt, ls):
         tbl = dt["ListAssetbundleId"]
-        tbl = [d for d in tbl if d["name"] in ls] if ls else tbl
+        tbl = [d for d in tbl if d["name"] in ls or d["hash"] in ls] if ls else tbl
         for d in tbl:
             fn = d["name"]
             rt = fn[: fn.rfind("/") + 1]
@@ -146,7 +146,7 @@ class AbcLdr(JsonLdr):
     def repackImpl(self, dst, src, dt, ls):
         hf = self.hf
         tbl = dt["ListAssetbundleId"]
-        tbl = [d for d in tbl if d["name"] in ls] if ls else tbl
+        tbl = [d for d in tbl if d["name"] in ls or d["hash"] in ls] if ls else tbl
         for d in tbl:
             fn = d["name"]
             if ls and not fn in ls: continue
@@ -173,7 +173,7 @@ class AfiLdr(JsonLdr):
         for d in dt:
             fn = d["Name"]
             tbl.append([fn + ".acb", d] if not fn.endswith(".awb") else fn)
-        if ls: tbl = [d for d in tbl if d[0] in ls]
+        if ls: tbl = [d for d in tbl if d[0] in ls or hf(d[0]) in ls]
         for fn, d in tbl:
             open(rt + fn, "wb").write(
                 open(src + hf(fn.encode("utf8")).hexdigest(), "rb").read()
@@ -188,7 +188,7 @@ class AfiLdr(JsonLdr):
         for d in dt:
             fn = d["Name"]
             tbl.append([fn + ".acb", d] if not fn.endswith(".awb") else fn)
-        if ls: tbl = [d for d in tbl if d[0] in ls]
+        if ls: tbl = [d for d in tbl if d[0] in ls or hf(d[0]) in ls]
         for fn in tbl:
             raw = open(rt + fn, "rb").read()
             d["Crc"] = hashlib.sha1(raw).hexdigest()
@@ -330,24 +330,27 @@ class CddLdr(ExtLdr):
         return dt
     
 
-gOrangeLdr = {
-    "abconfig": AbcLdr,
-    "audiofileinfo": AfiLdr,
-    "RelayParam": JsonLdr,
-    "GameData.bin": CddLdr,
-    "TextData.bin": CddLdr,
-    "ORANGE_SOUND.acf": NullLdr
-}
+gOrangeLdr = [
+    AbcLdr("abconfig"),
+    AfiLdr("audiofileinfo"),
+    JsonLdr("RelayParam"),
+    CddLdr("GameData.bin"),
+    CddLdr("TextData.bin"),
+    NullLdr("ORANGE_SOUND.acf")
+]
 
 def _proc(dt, ls):
-    if not ls: return [v(k) for k, v in dt.items()]
+    if not ls: return dt
     tbl = []
-    for k, v in dt.items():
+    for ldr in dt:
         try:
-            ls.remove(k)
-        except:
-            continue
-        tbl.append(v(k))
+            ls.remove(ldr.mName)
+        except KeyError:
+            try:
+                ls.remove(ldr.mHash)
+            except KeyError:
+                continue
+        tbl.append(ldr)
     return tbl
 
 def procUnpack(dst, src, *ls):
