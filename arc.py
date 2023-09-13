@@ -172,9 +172,9 @@ class AfiLdr(JsonLdr):
         tbl = []
         for d in dt:
             fn = d["Name"]
-            tbl.append(fn + ".acb" if not fn.endswith(".awb") else fn)
-        if ls: tbl = [fn for fn in tbl if fn in ls]
-        for fn in tbl:
+            tbl.append([fn + ".acb", d] if not fn.endswith(".awb") else fn)
+        if ls: tbl = [d for d in tbl if d[0] in ls]
+        for fn, d in tbl:
             open(rt + fn, "wb").write(
                 open(src + hf(fn.encode("utf8")).hexdigest(), "rb").read()
             )
@@ -187,12 +187,13 @@ class AfiLdr(JsonLdr):
         tbl = []
         for d in dt:
             fn = d["Name"]
-            tbl.append(fn + ".acb" if not fn.endswith(".awb") else fn)
-        if ls: tbl = [fn for fn in tbl if fn in ls]
+            tbl.append([fn + ".acb", d] if not fn.endswith(".awb") else fn)
+        if ls: tbl = [d for d in tbl if d[0] in ls]
         for fn in tbl:
-            open(src + hf(fn.encode("utf8")).hexdigest(), "wb").write(
-                open(rt + fn, "rb").read()
-            )
+            raw = open(rt + fn, "rb").read()
+            d["Crc"] = hashlib.sha1(raw).hexdigest()
+            d["Size"] = len(raw)
+            open(src + hf(fn.encode("utf8")).hexdigest(), "wb").write(raw)
         return dt
        
 # Extra raw data
@@ -339,14 +340,14 @@ gOrangeLdr = {
 }
 
 def _proc(dt, ls):
-    if not ls: return dt
-    tbl = {}
-    for k in dt:
+    if not ls: return [v(k) for k, v in dt.items()]
+    tbl = []
+    for k, v in dt.items():
         try:
             ls.remove(k)
         except:
             continue
-        tbl[k] = dt[k]
+        tbl.append(v(k))
     return tbl
 
 def procUnpack(dst, src, *ls):
@@ -354,19 +355,18 @@ def procUnpack(dst, src, *ls):
     if dst and not dst.endswith("/") and not dst.endswith("\\") : dst += "/"
     ls = set(ls)
     os.makedirs(dst, exist_ok = True)
-    for k, ldr in _proc(gOrangeLdr, ls).items(): ldr(k).unpack(dst, src, ls)
+    for ldr in _proc(gOrangeLdr, ls): ldr.unpack(dst, src, ls)
     
 def procRepack(dst, src, *ls):
     if src and not src.endswith("/") and not src.endswith("\\") : src += "/"
     if dst and not dst.endswith("/") and not dst.endswith("\\") : dst += "/"
     ls = set(ls)
     os.makedirs(src, exist_ok = True)
-    for k, ldr in _proc(gOrangeLdr, ls).items(): ldr(k).repack(dst, src, ls)
+    for ldr in _proc(gOrangeLdr, ls): ldr.repack(dst, src, ls)
 
 if __name__ == "__main__":
     argv = sys.argv
-    argc = len(argv)
-    if argc > 3:
+    if len(argv) > 3:
         {
              "d": procUnpack,
              "e": procRepack
