@@ -7,6 +7,8 @@ import lz4.block
 
 gAesKey = b"cbs4/+-jDAf!?s/#cbs4/+-jDAf!?s/#"
 gAesIv = b"=!r19kCsGHTAcr/@"
+gYamlLdr = yaml.CLoader if hasattr(yaml, "CLoader") else yaml.Loader
+gYamlDpr = yaml.CDumper if hasattr(yaml, "CDumper") else yaml.Dumper
 
 _id = lambda s : s
 
@@ -39,6 +41,7 @@ _cde_u32 = lambda cb, v: cb(struct.pack("<I", v))
 _cde_jpt = [_cde_i32, _cde_i64, _cde_f64, _cde_a8, _cde_a16, _cde_u8, _cde_a16]
 _cde_lbl = {v: k for k, v in enumerate(_cdd_lbl)}
 
+# 
 class NullLdr:
     hf = hashlib.md5
     
@@ -52,34 +55,35 @@ class NullLdr:
     decode = staticmethod(_id)
     encode = staticmethod(_id)
     
-    def unpackImpl(self, dst, src, dt):
+    def unpackImpl(self, dst, src, dt, ls):
         return dt
     
-    def unpack(self, dst, src):
+    def unpack(self, dst, src, ls):
         s = self.dump(
             self.unpackImpl(
                 dst, src,
                 self.decode(
                     open(src + self.mHash, "rb").read()
-                )
+                ), ls
             )
         )
         open(dst + self.mPath, "wb").write(s)
         
-    def repackImpl(self, dst, src, dt):
+    def repackImpl(self, dst, src, dt, ls):
         return dt
         
-    def repack(self, dst, src):
+    def repack(self, dst, src, ls):
         s = self.encode(
             self.repackImpl(
                 dst, src,
                 self.load(
                     open(dst + self.mPath, "rb").read()
-                )
+                ), ls
             )
         )
         open(src + self.mHash, "wb").write(s)
     
+# Json
 class JsonLdr(NullLdr):
         
     load = staticmethod(
@@ -113,17 +117,20 @@ class JsonLdr(NullLdr):
         )
     )
     
-    def unpackImpl(self, dst, src, dt):
+    def unpackImpl(self, dst, src, dt, ls):
         return dt
         
-    def repackImpl(self, dst, src, dt):
+    def repackImpl(self, dst, src, dt, ls):
         return dt
 
+# abconfig
 class AbcLdr(JsonLdr):
     
     # Unpack asset bundle
-    def unpackImpl(self, dst, src, dt):
-        for d in dt["ListAssetbundleId"]:
+    def unpackImpl(self, dst, src, dt, ls):
+        tbl = dt["ListAssetbundleId"]
+        tbl = [d for d in tbl if d["name"] in ls] if ls else tbl
+        for d in tbl:
             fn = d["name"]
             rt = fn[: fn.rfind("/") + 1]
             if rt : os.makedirs(dst + rt, exist_ok = True)
@@ -136,10 +143,13 @@ class AbcLdr(JsonLdr):
         return dt
         
     # Repack asset bundle
-    def repackImpl(self, dst, src, dt):
+    def repackImpl(self, dst, src, dt, ls):
         hf = self.hf
-        for d in dt["ListAssetbundleId"]:
+        tbl = dt["ListAssetbundleId"]
+        tbl = [d for d in tbl if d["name"] in ls] if ls else tbl
+        for d in tbl:
             fn = d["name"]
+            if ls and not fn in ls: continue
             raw = open(dst + fn, "rb").read()
             d["hash"] = fn = hf(fn.encode("utf8")).hexdigest()
             d["crc"] = crc = zlib.crc32(raw)
@@ -150,34 +160,42 @@ class AbcLdr(JsonLdr):
                 )
             )
         return dt
-        
+       
+# audiofileinfo
 class AfiLdr(JsonLdr):
     
     # Unpack audio
-    def unpackImpl(self, dst, src, dt):
+    def unpackImpl(self, dst, src, dt, ls):
         rt = dst + "audio/" 
         hf = self.hf
         os.makedirs(rt, exist_ok = True)
+        tbl = []
         for d in dt:
             fn = d["Name"]
-            if not fn.endswith(".awb"): fn += ".acb"
+            tbl.append(fn + ".acb" if not fn.endswith(".awb") else fn)
+        if ls: tbl = [fn for fn in tbl if fn in ls]
+        for fn in tbl:
             open(rt + fn, "wb").write(
                 open(src + hf(fn.encode("utf8")).hexdigest(), "rb").read()
             )
         return dt
             
     # Repack audio
-    def repackImpl(self, dst, src, dt):
+    def repackImpl(self, dst, src, dt, ls):
         rt = dst + "audio/" 
         hf = self.hf
+        tbl = []
         for d in dt:
             fn = d["Name"]
-            if not fn.endswith(".awb"): fn += ".acb"
+            tbl.append(fn + ".acb" if not fn.endswith(".awb") else fn)
+        if ls: tbl = [fn for fn in tbl if fn in ls]
+        for fn in tbl:
             open(src + hf(fn.encode("utf8")).hexdigest(), "wb").write(
                 open(rt + fn, "rb").read()
             )
         return dt
-        
+       
+# Extra raw data
 class ExtLdr(NullLdr):
     decode = staticmethod(
         lambda dt: lz4.block.decompress(
@@ -202,6 +220,7 @@ class ExtLdr(NullLdr):
         )
     )
     
+# Capcom data diagram
 class CddLdr(ExtLdr):
     
     def __init__(self, name):
@@ -209,10 +228,10 @@ class CddLdr(ExtLdr):
         self.mPath = name[: name.rfind(".") + 1][: -1] + "/.yaml"
     
     load = staticmethod(
-        lambda dt: yaml.load(dt.decode("utf8"), Loader = yaml.CLoader)
+        lambda dt: yaml.load(dt.decode("utf8"), Loader = gYamlLdr)
     )
     dump = staticmethod(
-        lambda dt: yaml.dump(dt, Dumper = yaml.CDumper, indent = 4, allow_unicode = True, sort_keys = False).encode("utf8")
+        lambda dt: yaml.dump(dt, Dumper = gYamlDpr, indent = 4, allow_unicode = True, sort_keys = False).encode("utf8")
     )
     
     @staticmethod
@@ -290,7 +309,7 @@ class CddLdr(ExtLdr):
             return ExtLdr.encode(f.getvalue())
         
     # Unpack data diagram
-    def unpackImpl(self, dst, src, dt):
+    def unpackImpl(self, dst, src, dt, ls):
         rt = dst + self.mPath[: -5]
         os.makedirs(rt, exist_ok = True)
         d = dt.pop("", {})
@@ -300,7 +319,7 @@ class CddLdr(ExtLdr):
         return d
     
     # Repack data diagram
-    def repackImpl(self, dst, src, dt):
+    def repackImpl(self, dst, src, dt, ls):
         rt = dst + self.mPath[: -5]
         dv = dt
         dt = {"": dt}
@@ -310,31 +329,44 @@ class CddLdr(ExtLdr):
         return dt
     
 
-gOrangeLdr = [
-    AbcLdr("abconfig"),
-    AfiLdr("audiofileinfo"),
-    JsonLdr("RelayParam"),
-    CddLdr("GameData.bin"),
-    CddLdr("TextData.bin"),
-    NullLdr("ORANGE_SOUND.acf")
-]
+gOrangeLdr = {
+    "abconfig": AbcLdr,
+    "audiofileinfo": AfiLdr,
+    "RelayParam": JsonLdr,
+    "GameData.bin": CddLdr,
+    "TextData.bin": CddLdr,
+    "ORANGE_SOUND.acf": NullLdr
+}
 
-def procUnpack(dst, src):
+def _proc(dt, ls):
+    if not ls: return dt
+    tbl = {}
+    for k in dt:
+        try:
+            ls.remove(k)
+        except:
+            continue
+        tbl[k] = dt[k]
+    return tbl
+
+def procUnpack(dst, src, *ls):
     if src and not src.endswith("/") and not src.endswith("\\") : src += "/"
     if dst and not dst.endswith("/") and not dst.endswith("\\") : dst += "/"
+    ls = set(ls)
     os.makedirs(dst, exist_ok = True)
-    for ldr in gOrangeLdr: ldr.unpack(dst, src)
+    for k, ldr in _proc(gOrangeLdr, ls).items(): ldr(k).unpack(dst, src, ls)
     
-def procRepack(dst, src):
+def procRepack(dst, src, *ls):
     if src and not src.endswith("/") and not src.endswith("\\") : src += "/"
     if dst and not dst.endswith("/") and not dst.endswith("\\") : dst += "/"
+    ls = set(ls)
     os.makedirs(src, exist_ok = True)
-    for ldr in gOrangeLdr: ldr.repack(dst, src)
+    for k, ldr in _proc(gOrangeLdr, ls).items(): ldr(k).repack(dst, src, ls)
 
 if __name__ == "__main__":
     argv = sys.argv
     argc = len(argv)
-    if argc == 4:
+    if argc > 3:
         {
              "d": procUnpack,
              "e": procRepack
