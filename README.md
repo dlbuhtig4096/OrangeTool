@@ -11,6 +11,7 @@ This module processes streaming assets.
     - Argments:
         - `str dst`: Work directory.
         - `str src`: The StreamingAssets folder.
+        - `*ls`: Optional additional arguments, str of processed files.
     - Return value:
         - `void`: None.
 
@@ -18,6 +19,7 @@ This module processes streaming assets.
     - Argments:
         - `str dst`: Work directory.
         - `str src`: The StreamingAssets folder.
+        - `*ls`: Optional additional arguments, str of processed files.
     - Return value:
         - `void`: None.
 
