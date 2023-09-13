@@ -211,15 +211,17 @@ class ExtLdr(NullLdr):
     )
     
     encode = staticmethod(
-        lambda dt: lz4.block.compress(
-            AES.new(gAesKey, AES.MODE_CBC, gAesIv).encrypt(
-                pad(
-                    ccCrypto(dt, gAesKey + gAesIv),
-                    AES.block_size
-                )
+        lambda dt: AES.new(gAesKey, AES.MODE_CBC, gAesIv).encrypt(
+            pad(
+                ccCrypto(
+                    lz4.block.compress(dt),
+                    gAesKey + gAesIv
+                ),
+                AES.block_size
             )
         )
     )
+    
     
 # Capcom data diagram
 class CddLdr(ExtLdr):
