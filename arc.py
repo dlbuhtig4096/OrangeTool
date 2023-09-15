@@ -172,7 +172,7 @@ class AfiLdr(JsonLdr):
         tbl = []
         for d in dt:
             fn = d["Name"]
-            tbl.append([fn + ".acb", d] if not fn.endswith(".awb") else fn)
+            tbl.append([fn + ".acb" if not fn.endswith(".awb") else fn, d])
         if ls: tbl = [d for d in tbl if d[0] in ls or hf(d[0]) in ls]
         for fn, d in tbl:
             open(rt + fn, "wb").write(
@@ -187,7 +187,7 @@ class AfiLdr(JsonLdr):
         tbl = []
         for d in dt:
             fn = d["Name"]
-            tbl.append([fn + ".acb", d] if not fn.endswith(".awb") else fn)
+            tbl.append([fn + ".acb" if not fn.endswith(".awb") else fn, d])
         if ls: tbl = [d for d in tbl if d[0] in ls or hf(d[0]) in ls]
         for fn in tbl:
             raw = open(rt + fn, "rb").read()
