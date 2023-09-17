@@ -77,3 +77,7 @@ This module processes save files from offline game.
         - `str rt`: Path to the save folder.
     - Return value:
         - `void`: None.
+
+# Credits #
+ - **[DarkDunterX](https://github.com/DarkHunterX)** for his detailed researches on file archives.
+ - **Blues** for his save dump from the online game.
