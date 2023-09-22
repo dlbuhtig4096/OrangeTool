@@ -9,17 +9,28 @@ This module processes streaming assets.
 
  - `procUnpack`: Unpack the download data under the stream assets.
     - Argments:
-        - `str dst`: Work directory.
-        - `str src`: The StreamingAssets folder.
-        - `*ls`: Optional additional arguments, str of processed files.
+        - `str dst`: The folder to decrypted assets.
+        - `str src`: The folder to encrypted assets.
+        - `list<OrangeTool.NullLdr> ldr`: List of loaders.
+        - `set<str> ls`: Set of str of processed files.
     - Return value:
         - `void`: None.
 
  - `procRepack`: Repack the download data under the stream assets.
     - Argments:
-        - `str dst`: Work directory.
-        - `str src`: The StreamingAssets folder.
-        - `*ls`: Optional additional arguments, str of processed files.
+        - `str dst`: The folder to decrypted assets.
+        - `str src`: The folder to encrypted assets.
+        - `list<OrangeTool.NullLdr> ldr`: List of loaders.
+        - `set<str> ls`: Set of str of processed files.
+    - Return value:
+        - `void`: None.
+
+ - `procCrawl`: Crawl download data from the online server.
+     - Argments:
+        - `str dst`: The folder to decrypted assets.
+        - `str src`: The folder to encrypted assets.
+        - `list<OrangeTool.NullLdr> ldr`: Unused.
+        - `set<str> ls`: Unused.
     - Return value:
         - `void`: None.
 

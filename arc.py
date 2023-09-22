@@ -1,9 +1,10 @@
 
-import io, os, sys, struct, json, hashlib, base64, zlib
+import io, os, sys, struct, json, hashlib, base64, zlib, threading
 import yaml
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 import lz4.block
+import requests
 
 gAesKey = b"cbs4/+-jDAf!?s/#cbs4/+-jDAf!?s/#"
 gAesIv = b"=!r19kCsGHTAcr/@"
@@ -45,10 +46,11 @@ _cde_lbl = {v: k for k, v in enumerate(_cdd_lbl)}
 class NullLdr:
     hf = hashlib.md5
     
-    def __init__(self, name):
+    def __init__(self, name, url = None):
         self.mName = name
         self.mHash = self.hf(name.encode("utf8")).hexdigest()
         self.mPath = name
+        self.mUrl = url
     
     load = staticmethod(_id)
     dump = staticmethod(_id)
@@ -82,6 +84,24 @@ class NullLdr:
             )
         )
         open(src + self.mHash, "wb").write(s)
+        
+    def crawlImpl(self, dst, src, dt, url, hdr):
+        return dt
+        
+    def crawl(self, dst, src, url, hdr):
+        r = requests.get(self.mUrl or url + requests.utils.quote(self.mName), hdr)
+        if r.status_code != 200:
+            print("[Error] Skipping %s" % self.mName)
+            return
+        
+        raw = r.content
+        open(src + self.mHash, "wb").write(raw)
+        s = self.dump(
+            self.crawlImpl(
+                dst, src, self.decode(raw), url, hdr
+            )
+        )
+        open(dst + self.mPath, "wb").write(s)
     
 # Json
 class JsonLdr(NullLdr):
@@ -116,12 +136,6 @@ class JsonLdr(NullLdr):
             )
         )
     )
-    
-    def unpackImpl(self, dst, src, dt, ls):
-        return dt
-        
-    def repackImpl(self, dst, src, dt, ls):
-        return dt
 
 # abconfig
 class AbcLdr(JsonLdr):
@@ -152,11 +166,34 @@ class AbcLdr(JsonLdr):
             if ls and not fn in ls: continue
             raw = open(dst + fn, "rb").read()
             d["hash"] = fn = hf(fn.encode("utf8")).hexdigest()
-            d["crc"] = crc = zlib.crc32(raw)
+            crc = d["crc"] # d["crc"] = crc = zlib.crc32(raw)
             open(src + fn, "wb").write(
                 ccCrypto(
                     raw,
                     [min(1 << int(i), 0x80) for i in str(crc)]
+                )
+            )
+        return dt
+    
+    # Crawl asset bundle
+    def crawlImpl(self, dst, src, dt, url, hdr):
+        for d in dt["ListAssetbundleId"]:
+            fn = d["name"]
+            rt = fn[: fn.rfind("/") + 1]
+            if rt : os.makedirs(dst + rt, exist_ok = True)
+            
+            if os.path.exists(dst + fn): continue
+            r = requests.get(url + requests.utils.quote(fn), hdr)
+            if r.status_code != 200:
+                print("[Error] Skipping %s" % fn)
+                continue
+            
+            raw = r.content
+            open(src + d["hash"], "wb").write(raw)
+            open(dst + fn, "wb").write(
+                ccCrypto(
+                    raw,
+                    [min(1 << int(i), 0x80) for i in str(d["crc"])]
                 )
             )
         return dt
@@ -195,6 +232,27 @@ class AfiLdr(JsonLdr):
             d["Size"] = len(raw)
             open(src + hf(fn.encode("utf8")).hexdigest(), "wb").write(raw)
         return dt
+    
+    # Crawl audio
+    def crawlImpl(self, dst, src, dt, url, hdr):
+        rt = dst + "audio/" 
+        hf = self.hf
+        os.makedirs(rt, exist_ok = True)
+        for d in dt:
+            fn = d["Name"]
+            if not fn.endswith(".awb"): fn += ".acb"
+            
+            if os.path.exists(rt + fn): continue
+            r = requests.get(url + requests.utils.quote(fn), hdr)
+            if r.status_code != 200:
+                print("[Error] Skipping %s" % fn)
+                continue
+            
+            raw = r.content
+            open(src + hf(fn.encode("utf8")).hexdigest(), "wb").write(raw)
+            open(rt + fn, "wb").write(raw)
+            
+        return dt
        
 # Extra raw data
 class ExtLdr(NullLdr):
@@ -226,8 +284,8 @@ class ExtLdr(NullLdr):
 # Capcom data diagram
 class CddLdr(ExtLdr):
     
-    def __init__(self, name):
-        super(CddLdr, self).__init__(name)
+    def __init__(self, name, url = None):
+        super(CddLdr, self).__init__(name, url)
         self.mPath = name[: name.rfind(".") + 1][: -1] + "/.yaml"
     
     load = staticmethod(
@@ -273,6 +331,7 @@ class CddLdr(ExtLdr):
             for i in range(numVar):
                 k = _cdd_a16(fread)
                 dv[k] = _cdd_a16(fread)
+            dv["$CreateTime"] = _cdd_a16(fread)
                 
         return dp
     
@@ -304,10 +363,12 @@ class CddLdr(ExtLdr):
                     
             sv = set(dv)
             sv.remove("")
+            sv.remove("$CreateTime")
             _cde_u32(fwrite, len(sv))
             for i in sv:
                 _cde_a16(fwrite, i)
                 _cde_a16(fwrite, dv[i])
+            _cde_a16(fwrite, dv.get("$CreateTime", ""))
                 
             return ExtLdr.encode(f.getvalue())
         
@@ -331,49 +392,110 @@ class CddLdr(ExtLdr):
             dt[k] = self.load(open(rt + k + ".yaml", "rb").read())
         return dt
     
+    # Crawl data diagram
+    def crawlImpl(self, dst, src, dt, url, hdr):
+        rt = dst + self.mPath[: -5]
+        os.makedirs(rt, exist_ok = True)
+        d = dt.pop("", {})
+        for k, df in dt.items():
+            if not isinstance(k, str): continue
+            open(rt + k + ".yaml", "wb").write(self.dump(df))
+        return d
+    
+# =============================================================================
+PROTOCOL = "http"
+ORIGIN = "rxdres.capcom.com.tw"
+DOMAIN = "%s://%s/" % (PROTOCOL, ORIGIN)
 
-gOrangeLdr = [
-    AbcLdr("abconfig"),
-    AfiLdr("audiofileinfo"),
-    JsonLdr("RelayParam"),
-    CddLdr("GameData.bin"),
-    CddLdr("TextData.bin"),
-    NullLdr("ORANGE_SOUND.acf")
-]
+gHdr = {
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Accept-Language": "en-US,en;q=1.0",
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive",
+    "Content-Type": "application/x-www-form-urlencoded",
+    "DNT": "1",
+    "Pragma": "no-cache",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "same-origin",
+    "Upgrade-Insecure-Requests": "1",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/117.0"
+}
 
-def _proc(dt, ls):
-    if not ls: return dt
+def _proc(ldr, ls):
+    if not ls: return ldr
     tbl = []
-    for ldr in dt:
+    for L in ldr:
         try:
-            ls.remove(ldr.mName)
+            ls.remove(L.mName)
         except KeyError:
             try:
-                ls.remove(ldr.mHash)
+                ls.remove(L.mHash)
             except KeyError:
                 continue
-        tbl.append(ldr)
+        tbl.append(L)
     return tbl
 
-def procUnpack(dst, src, *ls):
+def _run(f, *a):
+    t = threading.Thread(target = f, args = a)
+    t.start()
+    return t
+
+def procUnpack(dst, src, ldr, ls):
     if src and not src.endswith("/") and not src.endswith("\\") : src += "/"
     if dst and not dst.endswith("/") and not dst.endswith("\\") : dst += "/"
     ls = set(ls)
     os.makedirs(dst, exist_ok = True)
-    for ldr in _proc(gOrangeLdr, ls): ldr.unpack(dst, src, ls)
+    for L in ldr: L.unpack(dst, src, ls)
     
-def procRepack(dst, src, *ls):
+def procRepack(dst, src, ldr, ls):
     if src and not src.endswith("/") and not src.endswith("\\") : src += "/"
     if dst and not dst.endswith("/") and not dst.endswith("\\") : dst += "/"
     ls = set(ls)
     os.makedirs(src, exist_ok = True)
-    for ldr in _proc(gOrangeLdr, ls): ldr.repack(dst, src, ls)
+    for L in ldr: L.repack(dst, src, ls)
+
+def procCrawl(dst, src, ldr = None, ls = None):
+    if src and not src.endswith("/") and not src.endswith("\\") : src += "/"
+    if dst and not dst.endswith("/") and not dst.endswith("\\") : dst += "/"
+    os.makedirs(src, exist_ok = True)
+    os.makedirs(dst, exist_ok = True)
+    for t in [
+        _run(AbcLdr("abconfig").crawl, dst, src, DOMAIN + "325/AssetBundlesEncrypt/StandaloneWindows/", gHdr),
+        _run(AfiLdr("audiofileinfo").crawl, dst, src, DOMAIN + "325/CriWare/Android/Assets/StreamingAssets/", gHdr),
+        _run(JsonLdr("localizationfileinfo").crawl, dst, src, DOMAIN + "325/Localization/", gHdr),
+        _run(JsonLdr("RelayParam").crawl, dst, src, DOMAIN + "325/CriWare/Android/Assets/StreamingAssets/", gHdr),
+        _run(CddLdr("GameData.bin", DOMAIN + "325/Designs/OrangeData.bin").crawl, dst, src, DOMAIN + "325/Designs/", gHdr),
+        _run(CddLdr("TextData.bin", DOMAIN + "325/Designs/OrangeTextData.bin").crawl, dst, src, DOMAIN + "325/Designs/", gHdr),
+        _run(CddLdr("ExGameData.bin", DOMAIN + "ExOrangeData.bin").crawl, dst, src, DOMAIN, gHdr),
+        _run(CddLdr("ExTextData.bin", DOMAIN + "ExOrangeTextData.bin").crawl, dst, src, DOMAIN, gHdr),
+        _run(JsonLdr("5.1.1.bin").crawl, dst, src, DOMAIN, gHdr),
+        _run(NullLdr("forbiddenInfo.json").crawl, dst, src, DOMAIN + "325/Designs/", gHdr),
+        _run(NullLdr("ORANGE_SOUND.acf").crawl, dst, src, DOMAIN + "325/CriWare/Android/Assets/StreamingAssets/", gHdr),
+        _run(NullLdr("StandaloneWindows.manifest").crawl, dst, src, DOMAIN + "325/AssetBundlesEncrypt/StandaloneWindows/", gHdr)
+    ]: t.join()
 
 if __name__ == "__main__":
     argv = sys.argv
     if len(argv) > 3:
+        ls = set(argv[4:])
         {
-             "d": procUnpack,
-             "e": procRepack
-        }[argv[1]](*argv[2:])
+            "c": procCrawl,
+            "d": procUnpack,
+            "e": procRepack
+        }[argv[1]](
+            argv[2],
+            argv[3],
+            _proc([
+                    AbcLdr("abconfig"),
+                    AfiLdr("audiofileinfo"),
+                    JsonLdr("RelayParam"),
+                    CddLdr("GameData.bin"),
+                    CddLdr("TextData.bin"),
+                    NullLdr("ORANGE_SOUND.acf")
+                ], ls
+            ),
+            ls
+        )
             

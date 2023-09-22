@@ -1,3 +1,4 @@
 PyYAML
 pycryptodome
 lz4
+requests
