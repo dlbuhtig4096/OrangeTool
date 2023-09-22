@@ -225,7 +225,7 @@ class AfiLdr(JsonLdr):
         for d in dt:
             fn = d["Name"]
             tbl.append([fn + ".acb" if not fn.endswith(".awb") else fn, d])
-        if ls: tbl = [d for d in tbl if d[0] in ls or hf(d[0]) in ls]
+        if ls: tbl = [d for d in tbl if d[0] in ls or hf(d[0].encode("utf8")).hexdigest() in ls]
         for fn, d in tbl:
             raw = open(rt + fn, "rb").read()
             d["Crc"] = hashlib.sha1(raw).hexdigest()
