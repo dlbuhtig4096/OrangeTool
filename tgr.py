@@ -48,7 +48,7 @@ def cvtAll(dst, src):
 if __name__ == "__main__":
     argv = sys.argv
     if len(argv) == 3:
-        dst, src = argv
+        _, dst, src = argv
         (
             cvtAll if not src.endswith(".yaml") else 
                 cvtInf if src.endswith("/.yaml") or src.endswith("\\.yaml")

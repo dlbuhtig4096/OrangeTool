@@ -63,6 +63,16 @@ def sdEncode(data, hwd):
     fwrite(raw)
     return raw
 
+def saveDecode(dst, src):
+    for nm, dt in sdDecode({}, open(src, "rb")).items():
+        open(dst + nm + ".json", "wb").write(dt.encode(gPage))
+
+def saveEncode(dst, src):
+    data = {}
+    for fn in next(os.walk(dst))[-1]:
+        data[fn[: -5]] = open(dst + fn, "rb").read().decode(gPage)
+    sdEncode(data, open(src, "wb+"))
+
 def procDecode(brief = "BRIEF", rt = ""):
     if rt and not rt.endswith("/") and not rt.endswith("\\") : rt += "/"
     dst = rt + "save/"
