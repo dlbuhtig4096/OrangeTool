@@ -46,7 +46,7 @@ def cvtAll(dst, src):
     )
 
 if __name__ == "__main__":
-    argv = len(sys.argv)
+    argv = sys.argv
     if len(argv) == 3:
         dst, src = argv
         (

@@ -473,6 +473,7 @@ def procCrawl(dst, src, ldr = None, ls = None):
         _run(JsonLdr("5.1.1.bin").crawl, dst, src, DOMAIN, gHdr),
         _run(NullLdr("forbiddenInfo.json").crawl, dst, src, DOMAIN + "325/Designs/", gHdr),
         _run(NullLdr("ORANGE_SOUND.acf").crawl, dst, src, DOMAIN + "325/CriWare/Android/Assets/StreamingAssets/", gHdr),
+        _run(NullLdr("StandaloneWindows").crawl, dst, src, DOMAIN + "325/AssetBundlesEncrypt/StandaloneWindows/", gHdr),
         _run(NullLdr("StandaloneWindows.manifest").crawl, dst, src, DOMAIN + "325/AssetBundlesEncrypt/StandaloneWindows/", gHdr)
     ]: t.join()
 
