@@ -11,7 +11,7 @@ def cvtTbl(dst, src):
     except:
         return
     open(dst, "wb").write(
-        json.dumps({fn: tbl[1:]}, indent = 4, sort_keys = False).encode("utf8")
+        json.dumps({fn: tbl[1:]}, indent = 4, sort_keys = False, ensure_ascii = False).encode("utf8")
     )
     
 def cvtInf(dst, src):
@@ -20,7 +20,7 @@ def cvtInf(dst, src):
     t.remove("")
     t.remove("$CreateTime")
     open(dst, "wb").write(
-        json.dumps({k: a[k] for k in t}, indent = 4, sort_keys = False).encode("utf8")
+        json.dumps({k: a[k] for k in t}, indent = 4, sort_keys = False, ensure_ascii = False).encode("utf8")
     )
 
 def cvtAll(dst, src):
@@ -36,13 +36,13 @@ def cvtAll(dst, src):
         except:
             continue
         open(dst + fn + ".json", "wb").write(
-            json.dumps({fn: tbl[1:]}, indent = 4, sort_keys = False).encode("utf8")
+            json.dumps({fn: tbl[1:]}, indent = 4, sort_keys = False, ensure_ascii = False).encode("utf8")
         )
     t = set(a)
     t.remove("")
     t.remove("$CreateTime")
     open(dst + "Parameters.json", "wb").write(
-        json.dumps({k: a[k] for k in t}, indent = 4, sort_keys = False).encode("utf8")
+        json.dumps({k: a[k] for k in t}, indent = 4, sort_keys = False, ensure_ascii = False).encode("utf8")
     )
 
 if __name__ == "__main__":
